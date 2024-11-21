@@ -1,0 +1,1 @@
+# Building_AI_Powered_Solution_for_Assisting_Visually_Impaired_Individuals
