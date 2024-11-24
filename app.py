@@ -10,8 +10,8 @@ from langchain_google_genai import GoogleGenerativeAI
 pytesseract.pytesseract.tesseract_cmd = r"C:\Program Files\Tesseract-OCR\tesseract.exe"
 
 # Initialize Google Generative AI with API Key
-GEMINI_API_KEY = ("Gemini_Api_Key")  # Replace with your valid API key
-os.environ["Gemini_Api_Key"] = GEMINI_API_KEY
+GEMINI_API_KEY = "AIzaSyCUBqI0Q6DQ4NO6CJT2HN66ZbmKaaxuC-c"  # Replace with your valid API key
+os.environ["AIzaSyCUBqI0Q6DQ4NO6CJT2HN66ZbmKaaxuC-c"] = GEMINI_API_KEY
 
 llm = GoogleGenerativeAI(model="gemini-1.5-pro", api_key=GEMINI_API_KEY)
 
@@ -69,7 +69,7 @@ st.sidebar.markdown("""
 st.sidebar.markdown("### 📖 How to Use")
 st.sidebar.markdown("""
 1. Upload an image in the main section.
-2. Choose a feature, such as **Describe Scene**, **Text-to-Speech**, or **Personalized Assistance**.
+2. Choose a feature, such as **Describe Scene**, **Text-to-Speech**, **Personalized Assistance**, or **Object & Obstacle Detection**.
 3. Let the app process the image and provide assistance.
 """)
 
@@ -89,6 +89,16 @@ def generate_task_guidance_assistant(input_prompt, image_data):
     """
     model = genai.GenerativeModel('gemini-1.5-pro')
     response = model.generate_content([task_prompt, image_data[0]])
+    return response.text
+
+def detect_objects_and_obstacles(image_data):
+    """Generates object and obstacle detection details using Google Generative AI."""
+    detection_prompt = """
+    You are an AI assistant aiding visually impaired individuals. Identify and describe any objects or obstacles present in the image that may impact navigation. 
+    Provide safety insights to help users avoid hazards or interact with the detected objects securely.
+    """
+    model = genai.GenerativeModel('gemini-1.5-pro')
+    response = model.generate_content([detection_prompt, image_data[0]])
     return response.text
 
 def input_image_setup(uploaded_file):
@@ -116,6 +126,7 @@ with col1:
     scene_button = st.button("🔍 Describe Scene", use_container_width=True)
     tts_button = st.button("🔊 Text-to-Speech", use_container_width=True)
     task_button = st.button("📝 Personalized Assistance", use_container_width=True)
+    obstacle_button = st.button("⚠️ Object & Obstacle Detection", use_container_width=True)  # New button added here
 
 with col2:
     # Display the uploaded image if it exists, resized to a smaller size
@@ -131,6 +142,14 @@ You are an AI assistant helping visually impaired individuals by describing the 
 3. Suggestions for actions or precautions for the visually impaired.
 """
 
+# Container Layout for generated content
+def display_in_container(title, content):
+    """Utility function to display content in a container with a title."""
+    container = st.container()
+    with container:
+        st.subheader(title)
+        st.markdown(f"<div style='padding: 10px; background-color: #1E3A8A; border-radius: 5px;'>{content}</div>", unsafe_allow_html=True)
+
 # Process based on user interaction
 if uploaded_file:
     image_data = input_image_setup(uploaded_file)
@@ -138,14 +157,11 @@ if uploaded_file:
     if scene_button:
         with st.spinner("Generating scene description..."):
             response = generate_scene_description(input_prompt, image_data)
-            st.subheader("Scene Description")
-            st.write(response)
-
+            display_in_container("Scene Description", response)
             # Convert the scene description to speech
             st.write("🔊 Audio Output:")
             engine.save_to_file(response, 'scene_description.mp3')
             engine.runAndWait()
-
             # Play audio
             audio_file = open('scene_description.mp3', 'rb')
             audio_bytes = audio_file.read()
@@ -156,16 +172,11 @@ if uploaded_file:
         with st.spinner("Converting scene description to speech..."):
             # Generate the scene description for Text-to-Speech conversion
             scene_description = generate_scene_description(input_prompt, image_data)
-
-            # Show the generated scene description as text
-            st.subheader("Scene Description ✍️:")
-            st.text(scene_description)
-
+            display_in_container("Scene Description ✍️:", scene_description)
             # Convert text to speech
             st.write("🔊 Audio Output:")
             engine.save_to_file(scene_description, 'scene_description.mp3')
             engine.runAndWait()
-
             # Play audio
             audio_file = open('scene_description.mp3', 'rb')
             audio_bytes = audio_file.read()
@@ -176,25 +187,35 @@ if uploaded_file:
         with st.spinner("Generating personalized assistance..."):
             # Generate task-specific guidance based on the uploaded image
             task_guidance = generate_task_guidance_assistant(input_prompt, image_data)
-
-            # Show the generated task guidance as text
-            st.subheader("Personalized Assistance_For_Daily_Tasks ✍️:")
-            st.text(task_guidance)
-
+            display_in_container("Personalized Assistance For Daily Tasks ✍️:", task_guidance)
             # Convert task guidance to speech
             st.write("🔊 Audio Output:")
             engine.save_to_file(task_guidance, 'task_guidance_assistant.mp3')
             engine.runAndWait()
-
             # Play audio
             audio_file = open('task_guidance_assistant.mp3', 'rb')
             audio_bytes = audio_file.read()
             st.audio(audio_bytes, format="audio/mp3")
-            st.success("Task guidance_assistant read aloud!")
+            st.success("Task guidance read aloud!")
+
+    if obstacle_button:  # New condition for object & obstacle detection
+        with st.spinner("Detecting objects and obstacles..."):
+            # Generate object & obstacle detection response
+            detection_response = detect_objects_and_obstacles(image_data)
+            display_in_container("Object & Obstacle Detection Report 🛑:", detection_response)
+            # Convert the detection description to speech
+            st.write("🔊 Audio Output:")
+            engine.save_to_file(detection_response, 'object_detection.mp3')
+            engine.runAndWait()
+            # Play audio
+            audio_file = open('object_detection.mp3', 'rb')
+            audio_bytes = audio_file.read()
+            st.audio(audio_bytes, format="audio/mp3")
+            st.success("Object & Obstacle Detection read aloud!")
 
 # Add footer with project details and icons
 st.markdown("""
-    <footer style= padding:20px; text-align:center; font-size:14px;">
+    <footer style="padding:20px; text-align:center; font-size:14px;">
         <p><strong>AI Assistant for Visually Impaired</strong> | <i class="fas fa-cogs"></i> Features</p>
         <p>
             <i class="fas fa-eye"></i> Scene Understanding | 
